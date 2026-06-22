@@ -209,6 +209,9 @@
             background: var(--panel);
             padding: 8px;
             border-radius: 6px;
+            position: relative;
+            min-height: 360px;
+            height: 400px;
         }
         .player-search {
             width: 100%;
@@ -868,8 +871,10 @@ Switch to the Results, Detailed Results, Goals or Trends tabs for visualizations
                     datasets: [{
                         label: 'Cumulative Points',
                         data: cumPoints,
+                        parsing: false,
                         borderColor: colors.line,
-                        tension: 0.1,
+                        stepped: 'after',
+                        tension: 0,
                         fill: false,
                         pointRadius: 3
                     }]
@@ -879,15 +884,65 @@ Switch to the Results, Detailed Results, Goals or Trends tabs for visualizations
                     maintainAspectRatio: false,
                     plugins: { title: { display: true, text: 'Cumulative Points Over Time', color: colors.text } },
                     scales: {
-                        x: {
-                            type: 'time',
-                            time: { unit: 'month', displayFormats: { month: 'MMM yyyy' } },
+                        x: getCumulativeTimeScale(cumPoints, colors),
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Cumulative Points', color: colors.text },
+                            ticks: { color: colors.text },
                             grid: { color: colors.grid }
-                        },
-                        y: { beginAtZero: true, grid: { color: colors.grid } }
+                        }
                     }
                 }
             });
+        }
+
+        function getCumulativeTimeScale(cumPoints, colors) {
+            const minDate = cumPoints[0]?.x;
+            const maxDate = cumPoints[cumPoints.length - 1]?.x;
+            const spanDays = minDate && maxDate
+                ? Math.max(1, (maxDate - minDate) / (1000 * 60 * 60 * 24))
+                : 1;
+
+            let unit = 'month';
+            if (spanDays <= 45) unit = 'day';
+            else if (spanDays <= 180) unit = 'week';
+            else if (spanDays > 900) unit = 'quarter';
+
+            return {
+                type: 'time',
+                bounds: 'data',
+                min: minDate,
+                max: maxDate,
+                time: {
+                    unit,
+                    tooltipFormat: 'dd MMM yyyy',
+                    displayFormats: {
+                        day: 'd MMM yyyy',
+                        week: 'd MMM yyyy',
+                        month: 'MMM yyyy',
+                        quarter: 'MMM yyyy'
+                    }
+                },
+                ticks: {
+                    autoSkip: true,
+                    maxTicksLimit: 10,
+                    maxRotation: 45,
+                    color: colors.text
+                },
+                grid: { color: colors.grid }
+            };
+        }
+
+        function resizeVisibleCharts() {
+            if (document.getElementById('results').classList.contains('active') && resultsChart) {
+                resultsChart.resize();
+            }
+            if (document.getElementById('goals').classList.contains('active') && goalsChart) {
+                goalsChart.resize();
+            }
+            if (document.getElementById('trends').classList.contains('active') && cumulativeChart) {
+                cumulativeChart.resize();
+            }
         }
 
         function parseDate(dateStr) {
@@ -1059,6 +1114,9 @@ Switch to the Results, Detailed Results, Goals or Trends tabs for visualizations
                     b.classList.add('active');
                 }
             });
+
+            // Charts are first drawn while their tab is hidden; resize once visible.
+            requestAnimationFrame(resizeVisibleCharts);
         }
 
         // ============ INITIALIZATION ============
