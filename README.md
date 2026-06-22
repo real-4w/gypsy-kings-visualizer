@@ -21,7 +21,5 @@ This repository is synced **manually** from the development repo [`real-4w/GK`](
 
 ```powershell
 python "w_create_html_version V4.py"   # regenerate HTML from Excel
-python "w_sync_html_publish V4.py"     # regenerate, copy, and publish
+python "w_sync_html_publish V4.py"     # copy and publish to GitHub Pages
 ```
-
-`w_sync_html_publish V4.py` regenerates the HTML automatically unless you pass `--skip-generate`.
